@@ -6,6 +6,7 @@ import cors from 'cors'
 import dns from 'dns'
 
 import customerRoutes from "./routes/customer.routes.js";
+import productRoutes from "./routes/product.routes.js";
 
 dotenv.config()
 const app = express()
@@ -36,6 +37,7 @@ app.use(cookieParser())
 
 
 app.use('/customers', customerRoutes)
+app.use('/products', productRoutes)
 
 
 
