@@ -45,7 +45,7 @@ function Register() {
         setLoading(true);
         try {
             await api.post('/customers/register', form);
-            navigate('/login');
+            navigate('/home');
         } catch (err) {
             setError(err.response?.data?.message || 'Registration failed');
         } finally {

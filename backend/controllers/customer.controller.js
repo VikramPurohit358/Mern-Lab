@@ -34,6 +34,9 @@ export const registerCustomer = async (req, res) => {
             phone
         });
 
+        const token = generateToken(newCustomer._id);
+        res.cookie("token", token, cookieOptions);
+
         return res.status(201).json({
             success: true,
             message: "Customer registered successfully",
