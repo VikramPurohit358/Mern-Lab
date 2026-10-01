@@ -7,6 +7,8 @@ import dns from 'dns'
 
 import customerRoutes from "./routes/customer.routes.js";
 import productRoutes from "./routes/product.routes.js";
+import wishlistRoutes from "./routes/wishlist.routes.js";
+import cartRoutes from "./routes/cart.routes.js";
 
 dotenv.config()
 const app = express()
@@ -38,6 +40,8 @@ app.use(cookieParser())
 
 app.use('/customers', customerRoutes)
 app.use('/products', productRoutes)
+app.use('/wishlist', wishlistRoutes)
+app.use('/cart', cartRoutes)
 
 
 
