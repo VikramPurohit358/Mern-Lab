@@ -2,10 +2,14 @@ import bcrypt from "bcrypt";
 import Customer from "../models/customer.model.js";
 import generateToken from "../utils/generateToken.js";
 
+// In production (cross-origin: Vercel ↔ Render) cookies MUST be
+// SameSite=none + Secure=true, otherwise browsers silently drop them.
+// In local dev (same-origin / HTTP) use lax so cookies still work.
+const isProduction = process.env.NODE_ENV === "production";
 const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProduction,          // must be true when sameSite is "none"
+    sameSite: isProduction ? "none" : "lax",
     path: "/"
 };
 
