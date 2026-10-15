@@ -2,19 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import api from '../services/api';
 
 function ProductDetails() {
     const { id } = useParams();
-    const { addToCart, getItemQuantity, itemLoading } = useCart();
+    const { addToCart, getItemQuantity, itemLoading: cartItemLoading } = useCart();
+    const { isWishlisted, toggleWishlist, itemLoading: wishlistItemLoading } = useWishlist();
     const [product, setProduct] = useState(null);
     const [customer, setCustomer] = useState(null);
-    const [isWishlisted, setIsWishlisted] = useState(false);
-    const [wishlistLoading, setWishlistLoading] = useState(false);
-    const [wishlistMessage, setWishlistMessage] = useState('');
-    const [wishlistError, setWishlistError] = useState('');
     const [cartError, setCartError] = useState('');
     const [cartSuccess, setCartSuccess] = useState('');
+    const [wishlistError, setWishlistError] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -23,12 +22,6 @@ function ProductDetails() {
             try {
                 const res = await api.get('/customers/me');
                 setCustomer(res.data);
-
-                const wishlistRes = await api.get('/wishlist');
-                if (wishlistRes.data?.wishlist) {
-                    const found = wishlistRes.data.wishlist.some((item) => item._id === id);
-                    setIsWishlisted(found);
-                }
             } catch (err) {
             }
         };
@@ -54,10 +47,12 @@ function ProductDetails() {
         }
     }, [id]);
 
-    const isAddingToCart = itemLoading[id] === 'adding';
+    const isAddingToCart = cartItemLoading[id] === 'adding';
+    const isWishlistUpdating = wishlistItemLoading[id];
     const quantityInCart = product ? getItemQuantity(product._id) : 0;
     const isOutOfStock = product ? product.stock <= 0 : true;
     const isMaxStockReached = product ? quantityInCart >= product.stock : false;
+    const wishlisted = isWishlisted(id);
 
     const handleAddToCart = async () => {
         if (isOutOfStock || isAddingToCart || isMaxStockReached) return;
@@ -74,36 +69,14 @@ function ProductDetails() {
     };
 
     const handleWishlistToggle = async () => {
-        if (wishlistLoading) return;
-        setWishlistLoading(true);
-        setWishlistMessage('Saving...');
+        if (isWishlistUpdating) return;
         setWishlistError('');
 
         try {
-            if (isWishlisted) {
-                await api.delete(`/wishlist/${id}`);
-                setIsWishlisted(false);
-                setWishlistMessage('');
-            } else {
-                await api.post(`/wishlist/${id}`);
-                setIsWishlisted(true);
-                setWishlistMessage('Added to Wishlist');
-                setTimeout(() => setWishlistMessage(''), 3000);
-            }
+            await toggleWishlist(id);
         } catch (err) {
-            if (err.response?.status === 409) {
-                setIsWishlisted(true);
-                setWishlistMessage('Already in Wishlist');
-                setTimeout(() => setWishlistMessage(''), 2500);
-            } else if (err.response?.status === 401) {
-                setWishlistError('Please log in to save products.');
-                setTimeout(() => setWishlistError(''), 3500);
-            } else {
-                setWishlistError(err.response?.data?.message || 'Unable to save product. Please try again.');
-                setTimeout(() => setWishlistError(''), 3500);
-            }
-        } finally {
-            setWishlistLoading(false);
+            setWishlistError(err.response?.data?.message || 'Please log in to save products.');
+            setTimeout(() => setWishlistError(''), 3500);
         }
     };
 
@@ -170,16 +143,16 @@ function ProductDetails() {
 
                                     <button
                                         onClick={handleWishlistToggle}
-                                        disabled={wishlistLoading}
+                                        disabled={isWishlistUpdating}
                                         className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold shadow-sm transition active:scale-95 disabled:opacity-50 ${
-                                            isWishlisted
+                                            wishlisted
                                                 ? 'bg-rose-50 text-rose-600 border border-rose-200'
                                                 : 'bg-slate-100 text-slate-700 hover:bg-rose-50 hover:text-rose-600'
                                         }`}
                                     >
                                         <svg
                                             className={`h-4 w-4 ${
-                                                isWishlisted
+                                                wishlisted
                                                     ? 'fill-rose-600 text-rose-600'
                                                     : 'fill-none stroke-current stroke-2'
                                             }`}
@@ -187,7 +160,7 @@ function ProductDetails() {
                                         >
                                             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                                         </svg>
-                                        <span>{isWishlisted ? 'Saved to Wishlist' : 'Add to Wishlist'}</span>
+                                        <span>{wishlisted ? 'Saved to Wishlist' : 'Add to Wishlist'}</span>
                                     </button>
                                 </div>
 
@@ -215,12 +188,6 @@ function ProductDetails() {
                                 {wishlistError && (
                                     <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-2.5 text-xs font-medium text-red-600">
                                         {wishlistError}
-                                    </div>
-                                )}
-
-                                {wishlistMessage && (
-                                    <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs font-semibold text-rose-700">
-                                        ♥ {wishlistMessage}
                                     </div>
                                 )}
 

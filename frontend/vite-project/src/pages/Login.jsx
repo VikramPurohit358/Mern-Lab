@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import api from '../services/api';
 
 function Login() {
@@ -7,17 +9,20 @@ function Login() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { fetchCart } = useCart();
+    const { fetchWishlist } = useWishlist();
 
     useEffect(() => {
         const checkAuth = async () => {
             try {
                 await api.get('/customers/me');
+                await Promise.all([fetchCart(), fetchWishlist()]);
                 navigate('/home', { replace: true });
             } catch (err) {
             }
         };
         checkAuth();
-    }, [navigate]);
+    }, [navigate, fetchCart, fetchWishlist]);
 
     const handleChange = (e) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -35,6 +40,7 @@ function Login() {
         setLoading(true);
         try {
             await api.post('/customers/login', form);
+            await Promise.all([fetchCart(), fetchWishlist()]);
             navigate('/home');
         } catch (err) {
             setError(err.response?.data?.message || 'Invalid Credentials');

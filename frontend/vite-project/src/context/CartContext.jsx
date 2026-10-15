@@ -95,6 +95,11 @@ export function CartProvider({ children }) {
         return cart.some((i) => i.product?._id === productId);
     };
 
+    const clearCart = () => {
+        setCart([]);
+        setError('');
+    };
+
     // Derived values
     const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
     const subtotal = cart.reduce(
@@ -116,7 +121,8 @@ export function CartProvider({ children }) {
         updateQuantity,
         removeFromCart,
         getItemQuantity,
-        isInCart
+        isInCart,
+        clearCart
     };
 
     return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

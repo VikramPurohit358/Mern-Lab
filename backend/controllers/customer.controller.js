@@ -5,7 +5,8 @@ import generateToken from "../utils/generateToken.js";
 const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax"
+    sameSite: "lax",
+    path: "/"
 };
 
 export const registerCustomer = async (req, res) => {

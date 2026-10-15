@@ -1,58 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import api from '../services/api';
+import { useWishlist } from '../context/WishlistContext';
 
-function ProductCard({ product, initialWishlisted = false, onWishlistToggle }) {
-    const { addToCart, getItemQuantity, itemLoading } = useCart();
-    const [isWishlisted, setIsWishlisted] = useState(initialWishlisted);
-    const [wishlistLoading, setWishlistLoading] = useState(false);
-    const [wishlistStatus, setWishlistStatus] = useState('');
+function ProductCard({ product }) {
+    const { addToCart, getItemQuantity, itemLoading: cartItemLoading } = useCart();
+    const { isWishlisted, toggleWishlist, itemLoading: wishlistItemLoading } = useWishlist();
     const [cartError, setCartError] = useState('');
     const [cartSuccess, setCartSuccess] = useState('');
 
-    useEffect(() => {
-        setIsWishlisted(initialWishlisted);
-    }, [initialWishlisted]);
-
     const isOutOfStock = product.stock <= 0;
-    const isAddingToCart = itemLoading[product._id] === 'adding';
+    const isAddingToCart = cartItemLoading[product._id] === 'adding';
+    const isWishlistUpdating = wishlistItemLoading[product._id];
     const quantityInCart = getItemQuantity(product._id);
     const isMaxStockReached = quantityInCart >= product.stock;
+    const wishlisted = isWishlisted(product._id);
 
     const handleWishlistClick = async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        if (wishlistLoading) return;
-
-        setWishlistLoading(true);
-        setWishlistStatus('Saving...');
+        if (isWishlistUpdating) return;
 
         try {
-            if (isWishlisted) {
-                await api.delete(`/wishlist/${product._id}`);
-                setIsWishlisted(false);
-                setWishlistStatus('');
-                if (onWishlistToggle) onWishlistToggle(product._id, false);
-            } else {
-                await api.post(`/wishlist/${product._id}`);
-                setIsWishlisted(true);
-                setWishlistStatus('Added to Wishlist');
-                if (onWishlistToggle) onWishlistToggle(product._id, true);
-                setTimeout(() => setWishlistStatus(''), 2500);
-            }
+            await toggleWishlist(product._id);
         } catch (err) {
-            if (err.response?.status === 409) {
-                setIsWishlisted(true);
-                setWishlistStatus('Already in Wishlist');
-                setTimeout(() => setWishlistStatus(''), 2000);
-            } else {
-                setCartError(err.response?.data?.message || 'Unable to update wishlist.');
-                setTimeout(() => setCartError(''), 3000);
-            }
-        } finally {
-            setWishlistLoading(false);
+            setCartError(err.response?.data?.message || 'Please log in to save products.');
+            setTimeout(() => setCartError(''), 3000);
         }
     };
 
@@ -95,20 +69,20 @@ function ProductCard({ product, initialWishlisted = false, onWishlistToggle }) {
                 {/* Quick Wishlist Action */}
                 <button
                     onClick={handleWishlistClick}
-                    disabled={wishlistLoading}
-                    title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                    disabled={isWishlistUpdating}
+                    title={wishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
                     className={`absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-all active:scale-90 disabled:opacity-60 ${
-                        isWishlisted
+                        wishlisted
                             ? 'bg-rose-500 text-white hover:bg-rose-600'
                             : 'bg-white/90 text-slate-600 hover:bg-white hover:text-rose-500'
                     }`}
                 >
-                    {wishlistLoading ? (
+                    {isWishlistUpdating ? (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-rose-600 border-t-transparent" />
                     ) : (
                         <svg
                             className={`h-5 w-5 transition-transform ${
-                                isWishlisted ? 'fill-current scale-110' : 'fill-none stroke-current stroke-2'
+                                wishlisted ? 'fill-current scale-110' : 'fill-none stroke-current stroke-2'
                             }`}
                             viewBox="0 0 24 24"
                         >
@@ -171,12 +145,6 @@ function ProductCard({ product, initialWishlisted = false, onWishlistToggle }) {
                 {cartSuccess && (
                     <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-1.5 text-center text-xs font-semibold text-emerald-700">
                         ✓ {cartSuccess}
-                    </div>
-                )}
-
-                {wishlistStatus && (
-                    <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-center text-xs font-semibold text-rose-700">
-                        ♥ {wishlistStatus}
                     </div>
                 )}
 

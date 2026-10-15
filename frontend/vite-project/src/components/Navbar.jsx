@@ -1,40 +1,22 @@
-import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import api from '../services/api';
 
-function Navbar({ customer, wishlistCount: propWishlistCount }) {
+function Navbar({ customer }) {
     const navigate = useNavigate();
     const location = useLocation();
-    const { totalItems } = useCart();
-    const [wishlistCount, setWishlistCount] = useState(propWishlistCount ?? 0);
-
-    useEffect(() => {
-        if (propWishlistCount !== undefined) {
-            setWishlistCount(propWishlistCount);
-            return;
-        }
-
-        // Fetch wishlist count when authenticated
-        const fetchWishlistCount = async () => {
-            try {
-                const res = await api.get('/wishlist');
-                if (res.data?.count !== undefined) {
-                    setWishlistCount(res.data.count);
-                }
-            } catch (err) {
-                // Ignore if not logged in
-            }
-        };
-
-        fetchWishlistCount();
-    }, [propWishlistCount, location.pathname]);
+    const { totalItems, clearCart } = useCart();
+    const { wishlistCount, clearWishlist } = useWishlist();
 
     const handleLogout = async () => {
         try {
             await api.post('/customers/logout');
-            navigate('/login');
         } catch (error) {
+            // Proceed with clearing client state
+        } finally {
+            clearCart();
+            clearWishlist();
             navigate('/login');
         }
     };
@@ -114,6 +96,16 @@ function Navbar({ customer, wishlistCount: propWishlistCount }) {
                                 </span>
                             )}
                         </Link>
+                        <Link
+                            to="/orders"
+                            className={`relative inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold transition-colors ${
+                                location.pathname === '/orders' || location.pathname.startsWith('/orders/')
+                                    ? 'bg-indigo-50 text-indigo-600'
+                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                            }`}
+                        >
+                            <span>Orders</span>
+                        </Link>
                     </nav>
                 </div>
 
@@ -156,6 +148,15 @@ function Navbar({ customer, wishlistCount: propWishlistCount }) {
                                     {totalItems}
                                 </span>
                             )}
+                        </Link>
+                        <Link
+                            to="/orders"
+                            className={`rounded-lg p-2 text-slate-700 hover:bg-slate-100 ${
+                                location.pathname.startsWith('/orders') ? 'bg-indigo-50 text-indigo-600' : ''
+                            }`}
+                            title="My Orders"
+                        >
+                            📦
                         </Link>
                     </div>
 

@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import WishlistCard from '../components/WishlistCard';
+import { useWishlist } from '../context/WishlistContext';
 import api from '../services/api';
 
 function Wishlist() {
-    const [wishlist, setWishlist] = useState([]);
+    const { wishlist, loading, error, fetchWishlist, removeFromWishlist } = useWishlist();
     const [customer, setCustomer] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
     const navigate = useNavigate();
 
     // Check auth and fetch customer profile
@@ -24,37 +23,9 @@ function Wishlist() {
         fetchUser();
     }, [navigate]);
 
-    // Fetch user wishlist
-    const fetchWishlist = async () => {
-        setLoading(true);
-        setError('');
-        try {
-            const response = await api.get('/wishlist');
-            setWishlist(response.data?.wishlist || []);
-        } catch (err) {
-            if (err.response?.status === 401) {
-                navigate('/login');
-            } else {
-                setError(err.response?.data?.message || "We couldn't load your wishlist.");
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchWishlist();
-    }, []);
-
-    // Remove item handler passed to WishlistCard
-    const handleRemoveProduct = async (productId) => {
-        await api.delete(`/wishlist/${productId}`);
-        setWishlist((prev) => prev.filter((item) => item._id !== productId));
-    };
-
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
-            <Navbar customer={customer} wishlistCount={wishlist.length} />
+            <Navbar customer={customer} />
 
             <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
                 {/* Header */}
@@ -63,7 +34,7 @@ function Wishlist() {
                         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
                             My Wishlist
                         </h1>
-                        {!loading && !error && (
+                        {!loading && !error && wishlist.length > 0 && (
                             <p className="mt-1 text-sm text-slate-500">
                                 {wishlist.length} {wishlist.length === 1 ? 'product saved' : 'products saved'}
                             </p>
@@ -136,7 +107,7 @@ function Wishlist() {
                             <WishlistCard
                                 key={product._id}
                                 product={product}
-                                onRemove={handleRemoveProduct}
+                                onRemove={removeFromWishlist}
                             />
                         ))}
                     </div>

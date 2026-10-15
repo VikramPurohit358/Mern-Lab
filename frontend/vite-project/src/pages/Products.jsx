@@ -7,7 +7,6 @@ import api from '../services/api';
 function Products() {
     const [products, setProducts] = useState([]);
     const [customer, setCustomer] = useState(null);
-    const [wishlistIds, setWishlistIds] = useState(new Set());
     const [search, setSearch] = useState('');
     const [category, setCategory] = useState('');
     const [sort, setSort] = useState('');
@@ -19,13 +18,6 @@ function Products() {
             try {
                 const res = await api.get('/customers/me');
                 setCustomer(res.data);
-
-                // Fetch user's current wishlist to highlight saved products
-                const wishlistRes = await api.get('/wishlist');
-                if (wishlistRes.data?.wishlist) {
-                    const ids = new Set(wishlistRes.data.wishlist.map((item) => item._id));
-                    setWishlistIds(ids);
-                }
             } catch (err) {
                 // Ignore if guest
             }
@@ -59,21 +51,9 @@ function Products() {
         return () => clearTimeout(timeoutId);
     }, [search, category, sort]);
 
-    const handleWishlistToggle = (productId, isSaved) => {
-        setWishlistIds((prev) => {
-            const next = new Set(prev);
-            if (isSaved) {
-                next.add(productId);
-            } else {
-                next.delete(productId);
-            }
-            return next;
-        });
-    };
-
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900">
-            <Navbar customer={customer} wishlistCount={wishlistIds.size} />
+            <Navbar customer={customer} />
 
             <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
                 <div className="mb-8 flex flex-col gap-2">
@@ -139,12 +119,7 @@ function Products() {
                 {!loading && !error && products.length > 0 && (
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                         {products.map((product) => (
-                            <ProductCard
-                                key={product._id}
-                                product={product}
-                                initialWishlisted={wishlistIds.has(product._id)}
-                                onWishlistToggle={handleWishlistToggle}
-                            />
+                            <ProductCard key={product._id} product={product} />
                         ))}
                     </div>
                 )}

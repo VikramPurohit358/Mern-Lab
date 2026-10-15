@@ -25,11 +25,7 @@ function Cart() {
     }, [navigate]);
 
     const handleCheckout = () => {
-        setCheckingOut(true);
-        setTimeout(() => {
-            setCheckingOut(false);
-            alert('Checkout feature will be enabled in Lab-06! Cart subtotal: ₹' + subtotal.toLocaleString());
-        }, 800);
+        navigate('/checkout');
     };
 
     return (
